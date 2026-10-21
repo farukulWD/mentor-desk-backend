@@ -16,7 +16,7 @@ app.get("/", (_req: Request, res: Response) => {
   res.json({ success: true, message: "MentorDesk API is running" });
 });
 
-app.use("/api", routes);
+app.use("/api/v1", routes);
 
 app.use(notFound);
 app.use(globalErrorHandler);
