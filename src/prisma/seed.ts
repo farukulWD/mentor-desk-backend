@@ -1,10 +1,7 @@
-import bcrypt from "bcryptjs";
 import config from "../app/config";
 import prisma from "../app/lib/prisma";
+import { hashPassword } from "../app/utils/password";
 import { Role, SubmissionStatus } from "../generated/prisma/enums";
-
-const hash = (password: string) =>
-  bcrypt.hash(password, config.bcrypt_salt_rounds);
 
 const seedMentor = async () => {
   const { mentor_name, mentor_email, mentor_password } = config.seed;
@@ -21,7 +18,7 @@ const seedMentor = async () => {
     create: {
       name: mentor_name,
       email,
-      passwordHash: await hash(mentor_password),
+      passwordHash: await hashPassword(mentor_password),
       role: Role.MENTOR,
     },
   });
@@ -38,7 +35,7 @@ const demoStudents = [
 ];
 
 const seedDemo = async (mentorId: string) => {
-  const passwordHash = await hash(DEMO_PASSWORD);
+  const passwordHash = await hashPassword(DEMO_PASSWORD);
   const [alice, bob] = await Promise.all(
     demoStudents.map((student) =>
       prisma.user.upsert({
