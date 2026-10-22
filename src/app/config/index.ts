@@ -11,6 +11,10 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(5001),
   DATABASE_URL: z.url(),
   CLIENT_URL: z.url().default("http://localhost:3000"),
+  BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(4).max(15).default(10),
+  SEED_MENTOR_NAME: z.string().default("Admin Mentor"),
+  SEED_MENTOR_EMAIL: z.email().optional(),
+  SEED_MENTOR_PASSWORD: z.string().min(8).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -29,4 +33,10 @@ export default {
   port: env.PORT,
   database_url: env.DATABASE_URL,
   client_url: env.CLIENT_URL,
+  bcrypt_salt_rounds: env.BCRYPT_SALT_ROUNDS,
+  seed: {
+    mentor_name: env.SEED_MENTOR_NAME,
+    mentor_email: env.SEED_MENTOR_EMAIL,
+    mentor_password: env.SEED_MENTOR_PASSWORD,
+  },
 };
