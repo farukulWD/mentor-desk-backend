@@ -1,0 +1,22 @@
+model Submission {
+  id             String           @id @default(uuid())
+  projectName    String
+  projectNameKey String
+  repoUrl        String           @unique
+  liveUrl        String
+  description    String
+  status         SubmissionStatus @default(PENDING)
+  feedback       String?
+  studentId      String
+  student        User             @relation("StudentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
+  reviewedById   String?
+  reviewedBy     User?            @relation("MentorReviews", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt     DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([studentId, projectNameKey])
+  @@index([status, createdAt])
+  @@index([studentId, createdAt])
+  @@map("submissions")
+}

@@ -1,5 +1,13 @@
-// prisma/models/user.prisma
 model User {
-  id    Int    @id @default(autoincrement())
-  email String @unique
+  id           String       @id @default(uuid())
+  name         String
+  email        String       @unique
+  passwordHash String
+  role         Role         @default(STUDENT)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  submissions  Submission[] @relation("StudentSubmissions")
+  reviews      Submission[] @relation("MentorReviews")
+
+  @@map("users")
 }
