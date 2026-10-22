@@ -2,7 +2,7 @@ import { status } from "http-status";
 import { Prisma } from "../../generated/prisma/client";
 import { TGenericErrorResponse } from "./types";
 
-const getUniqueFields = (meta: Record<string, unknown> | undefined) => {
+export const getUniqueFields = (meta: Record<string, unknown> | undefined) => {
   if (!meta) return [];
   if (Array.isArray(meta.target)) return meta.target as string[];
   if (typeof meta.target === "string") return [meta.target];
