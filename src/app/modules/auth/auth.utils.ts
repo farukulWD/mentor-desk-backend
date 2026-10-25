@@ -1,7 +1,7 @@
 import { CookieOptions, Response } from "express";
 import config from "../../config";
 import { getTokenExpiry } from "../../utils/jwt";
-import { AUTH_COOKIE } from "./auth.constant";
+import { AUTH_COOKIE, REFRESH_COOKIE } from "./auth.constant";
 
 const cookieOptions: CookieOptions = {
   httpOnly: true,
@@ -10,13 +10,26 @@ const cookieOptions: CookieOptions = {
   path: "/",
 };
 
-export const setAuthCookie = (res: Response, token: string) => {
-  res.cookie(AUTH_COOKIE, token, {
+export type TAuthTokens = {
+  accessToken: string;
+  refreshToken: string;
+};
+
+export const setAuthCookies = (
+  res: Response,
+  { accessToken, refreshToken }: TAuthTokens,
+) => {
+  res.cookie(AUTH_COOKIE, accessToken, {
     ...cookieOptions,
-    expires: getTokenExpiry(token),
+    expires: getTokenExpiry(accessToken),
+  });
+  res.cookie(REFRESH_COOKIE, refreshToken, {
+    ...cookieOptions,
+    expires: getTokenExpiry(refreshToken),
   });
 };
 
-export const clearAuthCookie = (res: Response) => {
+export const clearAuthCookies = (res: Response) => {
   res.clearCookie(AUTH_COOKIE, cookieOptions);
+  res.clearCookie(REFRESH_COOKIE, cookieOptions);
 };

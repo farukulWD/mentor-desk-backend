@@ -13,7 +13,9 @@ const envSchema = z.object({
   CLIENT_URL: z.url().default("http://localhost:3000"),
   BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(4).max(15).default(10),
   JWT_SECRET: z.string().min(32),
-  JWT_EXPIRES_IN: z.string().default("7d"),
+  JWT_EXPIRES_IN: z.string().default("15m"),
+  JWT_REFRESH_SECRET: z.string().min(32),
+  JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),
   SEED_MENTOR_NAME: z.string().default("Admin Mentor"),
   SEED_MENTOR_EMAIL: z.email().optional(),
   SEED_MENTOR_PASSWORD: z.string().min(8).optional(),
@@ -39,6 +41,8 @@ export default {
   jwt: {
     secret: env.JWT_SECRET,
     expires_in: env.JWT_EXPIRES_IN,
+    refresh_secret: env.JWT_REFRESH_SECRET,
+    refresh_expires_in: env.JWT_REFRESH_EXPIRES_IN,
   },
   seed: {
     mentor_name: env.SEED_MENTOR_NAME,

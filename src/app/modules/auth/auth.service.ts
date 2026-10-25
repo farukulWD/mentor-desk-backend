@@ -1,11 +1,21 @@
 import { status } from "http-status";
 import AppError from "../../errors/AppError";
 import prisma from "../../lib/prisma";
-import { signToken } from "../../utils/jwt";
+import {
+  signRefreshToken,
+  signToken,
+  TJwtPayload,
+  verifyRefreshToken,
+} from "../../utils/jwt";
 import { comparePassword, hashPassword } from "../../utils/password";
 import { Role } from "../../../generated/prisma/enums";
 import { userSafeSelect } from "./auth.constant";
 import { TLoginPayload, TSignupPayload } from "./auth.validation";
+
+const issueTokens = (payload: TJwtPayload) => ({
+  accessToken: signToken(payload),
+  refreshToken: signRefreshToken(payload),
+});
 
 const signup = async ({ name, email, password }: TSignupPayload) => {
   const existing = await prisma.user.findUnique({ where: { email } });
@@ -25,8 +35,7 @@ const signup = async ({ name, email, password }: TSignupPayload) => {
     select: userSafeSelect,
   });
 
-  const accessToken = signToken({ userId: user.id, role: user.role });
-  return { user, accessToken };
+  return { user, ...issueTokens({ userId: user.id, role: user.role }) };
 };
 
 const login = async ({ email, password }: TLoginPayload) => {
@@ -37,8 +46,24 @@ const login = async ({ email, password }: TLoginPayload) => {
   }
 
   const { passwordHash: _passwordHash, updatedAt: _updatedAt, ...safeUser } = user;
-  const accessToken = signToken({ userId: user.id, role: user.role });
-  return { user: safeUser, accessToken };
+  return {
+    user: safeUser,
+    ...issueTokens({ userId: user.id, role: user.role }),
+  };
+};
+
+const refresh = async (token: string) => {
+  const payload = verifyRefreshToken(token);
+  const user = await prisma.user.findUnique({
+    where: { id: payload.userId },
+    select: userSafeSelect,
+  });
+
+  if (!user) {
+    throw new AppError(status.UNAUTHORIZED, "User no longer exists");
+  }
+
+  return { user, ...issueTokens({ userId: user.id, role: user.role }) };
 };
 
 const getMe = (userId: string) =>
@@ -47,4 +72,4 @@ const getMe = (userId: string) =>
     select: userSafeSelect,
   });
 
-export const AuthService = { signup, login, getMe };
+export const AuthService = { signup, login, refresh, getMe };

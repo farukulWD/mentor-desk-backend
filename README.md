@@ -4,7 +4,7 @@ Express + PostgreSQL API for MentorDesk: students submit projects, mentors revie
 
 ## Tech stack
 
-Node.js, Express 5, TypeScript, Prisma 7 (`@prisma/adapter-pg`) on PostgreSQL, zod, JWT in an httpOnly cookie, bcryptjs, express-rate-limit.
+Node.js, Express 5, TypeScript, Prisma 7 (`@prisma/adapter-pg`) on PostgreSQL, zod, JWT access and refresh tokens in httpOnly cookies, bcryptjs, express-rate-limit.
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ Node.js, Express 5, TypeScript, Prisma 7 (`@prisma/adapter-pg`) on PostgreSQL, z
 ```bash
 pnpm install
 cp .env.example .env
-# edit DATABASE_URL and JWT_SECRET in .env
+# edit DATABASE_URL, JWT_SECRET and JWT_REFRESH_SECRET in .env
 pnpm db:migrate
 SEED_DEMO=true pnpm db:seed
 pnpm dev
@@ -34,8 +34,10 @@ API runs on http://localhost:5001, base path `/api/v1`. Check it with `GET /api/
 | `DATABASE_URL` | required | PostgreSQL connection string. |
 | `CLIENT_URL` | `http://localhost:3000` | Frontend origin allowed by CORS (with credentials). |
 | `BCRYPT_SALT_ROUNDS` | `10` | Password hashing cost (4–15). |
-| `JWT_SECRET` | required | Token signing secret, at least 32 characters. |
-| `JWT_EXPIRES_IN` | `7d` | Token and cookie lifetime. |
+| `JWT_SECRET` | required | Access token signing secret, at least 32 characters. |
+| `JWT_EXPIRES_IN` | `15m` | Access token and cookie lifetime. |
+| `JWT_REFRESH_SECRET` | required | Refresh token signing secret, at least 32 characters. |
+| `JWT_REFRESH_EXPIRES_IN` | `7d` | Refresh token and cookie lifetime. |
 | `SEED_MENTOR_NAME` | `Admin Mentor` | Seeded mentor's name. |
 | `SEED_MENTOR_EMAIL` | none | Seeded mentor's email (required to run the seed). |
 | `SEED_MENTOR_PASSWORD` | none | Seeded mentor's password, at least 8 characters (required to run the seed). |
@@ -66,7 +68,7 @@ Students create their own accounts through `POST /auth/signup`.
 
 ## Authentication
 
-Signup and login set an httpOnly `accessToken` cookie (`SameSite=Lax`, `Secure` in production). Clients send requests with credentials included. An `Authorization: Bearer <token>` header also works, which is handy for curl or Postman; the token is in the login response body.
+Signup and login set two httpOnly cookies (`SameSite=Lax`, `Secure` in production): a short-lived `accessToken` and a long-lived `refreshToken`. When the access token expires, `POST /auth/refresh` issues a new pair from the refresh cookie. Clients send requests with credentials included. An `Authorization: Bearer <token>` header also works, which is handy for curl or Postman; the token is in the login response body.
 
 ## API
 
@@ -77,7 +79,8 @@ All paths are under `/api/v1`.
 | GET | `/health` | public | Service and database status |
 | POST | `/auth/signup` | public | Create a student account and log in |
 | POST | `/auth/login` | public | Log in (student or mentor) |
-| POST | `/auth/logout` | logged in | Clear the auth cookie |
+| POST | `/auth/refresh` | refresh cookie | Rotate access and refresh tokens |
+| POST | `/auth/logout` | public | Clear the auth cookies |
 | GET | `/auth/me` | logged in | Current user |
 | POST | `/submissions` | student | Create a submission |
 | GET | `/submissions/me` | student | Own submissions, newest first |
@@ -133,7 +136,7 @@ src/
     middlewares/            auth, validation, rate limits, not-found, error handler
     errors/                 AppError, zod and Prisma error mapping
     modules/
-      auth/                 signup, login, logout, me
+      auth/                 signup, login, refresh, logout, me
       submission/           create, list, stats, resubmit, review
       health/
     utils/                  jwt, password hashing, response helpers
